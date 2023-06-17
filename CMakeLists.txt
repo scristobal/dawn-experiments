@@ -27,3 +27,8 @@ if(XCODE)
         XCODE_GENERATE_SCHEME ON
         XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal")
 endif()
+
+
+
+add_subdirectory(glfw)
+target_link_libraries(App PRIVATE glfw)
