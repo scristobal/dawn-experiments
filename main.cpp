@@ -129,6 +129,7 @@ void inspectAdapter(WGPUAdapter adapter) {
 }
 
 int main(int, char**) {
+    // window creation
     if (!glfwInit()) {
         std::cerr << "Could not initialize GLFW!" << std::endl;
         return 1;
@@ -143,6 +144,7 @@ int main(int, char**) {
         return 1;
     }
 
+    // instance creation
     WGPUInstanceDescriptor desc = {};
     desc.nextInChain = nullptr;
 
@@ -153,17 +155,20 @@ int main(int, char**) {
         return 1;
     }
 
+    // adapter creation
     WGPUSurface surface = glfwGetWGPUSurface(instance, window);
 
     std::cout << "Requesting adapter..." << std::endl;
 
     WGPURequestAdapterOptions adapterOpts = {};
+    adapterOpts.compatibleSurface = surface;
     WGPUAdapter adapter = requestAdapter(instance, &adapterOpts);
 
     std::cout << "Got adapter: " << adapter << std::endl;
 
     inspectAdapter(adapter);
 
+    // device creation
     std::cout << "Requesting device..." << std::endl;
 
     WGPUDeviceDescriptor deviceDesc = {};
@@ -179,6 +184,7 @@ int main(int, char**) {
 
     std::cout << "Got device: " << device << std::endl;
 
+    // print unhandled exceptions
     auto onDeviceError = [](WGPUErrorType type, char const* message, void* /* pUserData */) {
         std::cout << "Unhandled device error: type " << type;
         if (message) std::cout << " (" << message << ")";
@@ -186,22 +192,56 @@ int main(int, char**) {
     };
     wgpuDeviceSetUncapturedErrorCallback(device, onDeviceError, nullptr /* pUserData */);
 
+    // command queue
+    WGPUQueue queue = wgpuDeviceGetQueue(device);
+
+    // queue debug
+
+#ifdef WEBGPU_BACKEND_DAWN
+    // Add a callback to monitor the moment queued work finished
+    auto onQueueWorkDone = [](WGPUQueueWorkDoneStatus status, void* /* pUserData */) {
+        std::cout << "Queued work finished with status: " << status << std::endl;
+    };
+    wgpuQueueOnSubmittedWorkDone(queue, 0 /* non standard argument for Dawn */, onQueueWorkDone, nullptr /* pUserData */);
+#endif  // WEBGPU_BACKEND_DAWN
+
+    // encoder creation
+    WGPUCommandEncoderDescriptor encoderDesc = {};
+    encoderDesc.nextInChain = nullptr;
+    encoderDesc.label = "Simple command encoder";
+    WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, &encoderDesc);
+
+    wgpuCommandEncoderInsertDebugMarker(encoder, "Do one thing");
+    wgpuCommandEncoderInsertDebugMarker(encoder, "Do another thing");
+
+    WGPUCommandBufferDescriptor cmdBufferDescriptor = {};
+    cmdBufferDescriptor.nextInChain = nullptr;
+    cmdBufferDescriptor.label = "Command buffer";
+    WGPUCommandBuffer command = wgpuCommandEncoderFinish(encoder, &cmdBufferDescriptor);
+
+    // Finally submit the command queue
+    std::cout << "Submitting command..." << std::endl;
+    wgpuQueueSubmit(queue, 1, &command);
+
+    // main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();  // waits for events
     }
 
+#ifdef WEBGPU_BACKEND_DAWN
+    wgpuCommandEncoderRelease(encoder);
+    wgpuCommandBufferRelease(command);
+#endif
+
+    // cleanup
     wgpuSurfaceRelease(surface);
-
     wgpuDeviceRelease(device);
-
     wgpuAdapterRelease(adapter);
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
-
     wgpuInstanceRelease(instance);
 
-    std::cout << "Hello, world!" << std::endl;
+    glfwDestroyWindow(window);
+    glfwTerminate();
+
+    std::cout << "Exiting..." << std::endl;
     return 0;
 }
