@@ -32,7 +32,8 @@ endif()
 
 add_subdirectory(glfw)
 add_subdirectory(webgpu)
+add_subdirectory(glfw3webgpu)
 
-target_link_libraries(App PRIVATE glfw webgpu)
+target_link_libraries(App PRIVATE glfw webgpu glfw3webgpu)
 
-target_copy_webgpu_binaries(App) # only really necessary if using wgpu-native
+# target_copy_webgpu_binaries(App) # only really necessary if using wgpu-native

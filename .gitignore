@@ -1,2 +1,3 @@
 #cmake builds
 build/
+.DS_Store

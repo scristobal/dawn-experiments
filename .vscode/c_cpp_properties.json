@@ -3,7 +3,9 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/**/*",
+                "${workspaceFolder}/glfw3webgpu"
             ],
             "defines": [],
             "macFrameworkPath": [

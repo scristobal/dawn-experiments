@@ -1,4 +1,5 @@
 #include <GLFW/glfw3.h>
+#include <glfw3webgpu.h>
 #include <webgpu/webgpu.h>
 
 #include <iostream>
@@ -35,6 +36,7 @@ int main(int, char**) {
         return 1;
     }
 
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWwindow* window = glfwCreateWindow(640, 480, "Learn WebGPU", NULL, NULL);
 
     if (!window) {
@@ -53,6 +55,8 @@ int main(int, char**) {
         return 1;
     }
 
+    WGPUSurface surface = glfwGetWGPUSurface(instance, window);
+
     std::cout << "Requesting adapter..." << std::endl;
 
     WGPURequestAdapterOptions adapterOpts = {};
@@ -63,6 +67,8 @@ int main(int, char**) {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();  // waits for events
     }
+
+    wgpuSurfaceRelease(surface);
 
     wgpuAdapterRelease(adapter);
 
