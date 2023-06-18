@@ -43,8 +43,10 @@ WGPUAdapter requestAdapter(WGPUInstance instance, WGPURequestAdapterOptions cons
  */
 void inspectAdapter(WGPUAdapter adapter) {
     std::vector<WGPUFeatureName> features;
+
     size_t featureCount = wgpuAdapterEnumerateFeatures(adapter, nullptr);
     features.resize(featureCount);
+
     wgpuAdapterEnumerateFeatures(adapter, features.data());
 
     std::cout << "Adapter features:" << std::endl;
@@ -132,20 +134,6 @@ int main(int, char**) {
     WGPUAdapter adapter = requestAdapter(instance, &adapterOpts);
 
     std::cout << "Got adapter: " << adapter << std::endl;
-
-    std::vector<WGPUFeatureName> features;
-
-    size_t featuresCount = wgpuAdapterEnumerateFeatures(adapter, nullptr);
-
-    features.resize(featuresCount);
-
-    wgpuAdapterEnumerateFeatures(adapter, features.data());
-
-    std::cout << "Adapter features:" << std::endl;
-
-    for (auto f : features) {
-        std::cout << " - " << f << std::endl;
-    }
 
     inspectAdapter(adapter);
 
