@@ -37,6 +37,33 @@ WGPUAdapter requestAdapter(WGPUInstance instance, WGPURequestAdapterOptions cons
     return userData.adapter;
 }
 
+WGPUDevice requestDevice(WGPUAdapter adapter, WGPUDeviceDescriptor const* descriptor) {
+    struct UserData {
+        WGPUDevice device = nullptr;
+        bool requestEnded = false;
+    };
+
+    UserData userData;
+
+    auto onDeviceRequestedEnded = [](WGPURequestDeviceStatus status, WGPUDevice device, char const* message, void* pUserData) {
+        UserData& userData = *reinterpret_cast<UserData*>(pUserData);
+
+        if (status == WGPURequestDeviceStatus_Success) {
+            userData.device = device;
+        } else {
+            std::cout << "Could not get WebGPU device: " << message << std::endl;
+        }
+
+        userData.requestEnded = true;
+    };
+
+    wgpuAdapterRequestDevice(adapter, descriptor, onDeviceRequestedEnded, &userData);
+
+    assert(userData.requestEnded);
+
+    return userData.device;
+}
+
 /**
  * An example of how we can inspect the capabilities of the hardware through
  * the adapter object.
@@ -137,11 +164,35 @@ int main(int, char**) {
 
     inspectAdapter(adapter);
 
+    std::cout << "Requesting device..." << std::endl;
+
+    WGPUDeviceDescriptor deviceDesc = {};
+    deviceDesc.nextInChain = nullptr;
+    deviceDesc.label = "Simpler device";
+    deviceDesc.requiredFeaturesCount = 0;
+    deviceDesc.requiredLimits = nullptr;
+    deviceDesc.defaultQueue.nextInChain = nullptr;
+    deviceDesc.defaultQueue.label = "The default queue";
+    deviceDesc.nextInChain = nullptr;
+
+    WGPUDevice device = requestDevice(adapter, &deviceDesc);
+
+    std::cout << "Got device: " << device << std::endl;
+
+    auto onDeviceError = [](WGPUErrorType type, char const* message, void* /* pUserData */) {
+        std::cout << "Unhandled device error: type " << type;
+        if (message) std::cout << " (" << message << ")";
+        std::cout << std::endl;
+    };
+    wgpuDeviceSetUncapturedErrorCallback(device, onDeviceError, nullptr /* pUserData */);
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();  // waits for events
     }
 
     wgpuSurfaceRelease(surface);
+
+    wgpuDeviceRelease(device);
 
     wgpuAdapterRelease(adapter);
 
