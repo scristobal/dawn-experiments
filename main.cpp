@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 /**
  * Utility function to get a WebGPU adapter, so that
